@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>英作文 練習アプリ — 270問</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  /* --- グラデーション背景（英語アプリっぽい）＋元デザインを継承 --- */
+  body{
+    font-family:system-ui,-apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background: linear-gradient(135deg, #e6f0ff 0%, #f3e8ff 50%, #fff6e6 100%);
+    margin:0;padding:18px;display:flex;flex-direction:column;align-items:center;min-height:100vh;
+  }
+  .wrap{width:100%;max-width:980px}
+  h1{margin:6px 0 12px;color:#0f172a}
+  .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  select,input[type=checkbox]{padding:8px;border-radius:8px;border:1px solid #cbd5e1}
+  .card{background:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 20px rgba(15,23,42,0.08)}
+  #questionJP{font-size:18px;margin-bottom:8px;color:#0b1220}
+  textarea{width:100%;min-height:84px;padding:10px;border-radius:8px;border:1px solid #e5e7eb;font-size:16px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  button{background:#2563eb;color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:15px}
+  button.secondary{background:#10b981}
+  button.warn{background:#f59e0b}
+  .feedback{margin-top:10px;min-height:44px;font-weight:700}
+  .model-answer{margin-top:8px;color:#065f46;font-weight:600}
+  .scoreboard{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .scorebox{background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #e6eefc;min-width:160px}
+  .small{font-size:13px;color:#475569}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .right{margin-left:auto}
+  footer{margin-top:16px;font-size:13px;color:#64748b}
+  .muted{color:#6b7280;font-size:13px}
+  button:active{transform:translateY(1px)}
+  @media(max-width:520px){ .top{flex-direction:column;align-items:stretch} .btns{flex-direction:column} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>英作文 練習アプリ　 — 9タイプ × 30問（270問）</h1>
+
+  <div class="top">
+    <label>タイプ：
+      <select id="typeSelect"></select>
+    </label>
+
+    <label>モード：
+      <select id="modeSelect">
+        <option value="seq">順番</option>
+        <option value="shuffle">シャッフル</option>
+      </select>
+    </label>
+
+    <label>音声言語：
+      <select id="ttsLang">
+        <option value="en-US">English (en-US)</option>
+        <option value="ja-JP">日本語 (ja-JP)</option>
+      </select>
+    </label>
+
+    <label class="right small">検索：
+      <input id="searchInput" placeholder="キーワードで検索 (例: dinner)" />
+    </label>
+  </div>
+
+  <div class="card">
+    <div id="questionJP">ここに日本語の問題が表示されます。</div>
+    <div class="muted small" id="metaInfo"></div>
+    <textarea id="answer" placeholder="ここに英語で入力してください"></textarea>
+
+    <div class="btns">
+      <button id="checkBtn">答え合わせ</button>
+      <button id="nextBtn" class="secondary">▶ 次の問題へ</button>
+      <button id="speakBtn" class="warn">🔊 読む</button>
+      <button id="speakBothBtn">🔊 英→日</button>
+      <button id="voiceBtn">🎤 音声入力</button>
+      <button id="showAllBtn">📚 全問表示</button>
+      <button id="resetScoreBtn" style="background:#ef4444">スコアリセット</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <!-- ここが追加：正解時・不正解時どちらでも模範解答を表示 -->
+    <div class="model-answer" id="modelAnswer"></div>
+
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <div style="margin-top:10px">
+      <label><input type="checkbox" id="acceptPartial" checked /> 部分一致（柔軟判定）を許可</label>
+    </div>
+  </div>
+
+  <div id="allList" style="margin-top:12px;display:none"></div>
+
+  <footer>
+    注：判定は短縮形・同義語・類似表現を許容しています。音声認識はブラウザ依存（Chrome推奨）。
+  </footer>
+</div>
+
+<script>
+/* ===========================
+   問題データ（9タイプ × 各30問 = 270問）
+   （ユーザー入力どおりの完全版データをそのまま格納）
+   ===========================*/
+
+const TYPE_LABELS = [
+  "WH名詞節","動名詞","不定詞","過去分詞","動詞の原形","未来形","仮定法","受動態","現在完了"
+];
+
+const q0 = [
+  { jp: "彼がいつ帰ってくるか知っていますか？", en: "Do you know when he will come back?" },
+  { jp: "なぜ彼女が怒っているのか分かりません。", en: "I don’t know why she is angry." },
+  { jp: "彼がどこで働いているか覚えていますか？", en: "Do you remember where he works?" },
+  { jp: "彼がその仕事を受けるかどうか教えてください。", en: "Tell me if he will take the job." },
+  { jp: "彼女が何を考えているのか知りたい。", en: "I want to know what she is thinking." },
+  { jp: "彼がどれくらい疲れているのか分かりますか？", en: "Do you know how tired he is?" },
+  { jp: "なぜ彼女が会議に来なかったのか覚えていますか？", en: "Do you remember why she didn’t come to the meeting?" },
+  { jp: "彼が何を注文したか思い出せません。", en: "I don’t remember what he ordered." },
+  { jp: "彼女がどんな人なのか教えてください。", en: "Tell me what kind of person she is." },
+  { jp: "彼がどこに行ったのか分かりました。", en: "I found out where he went." },
+  { jp: "彼女が健康かどうか知っていますか？", en: "Do you know if she is healthy?" },
+  { jp: "なぜ彼がそんなことを言ったのか分かりません。", en: "I don’t know why he said that." },
+  { jp: "彼がいつ会社を辞めたか知っていますか？", en: "Do you know when he quit the company?" },
+  { jp: "彼がその問題をどう解決したか聞きましたか？", en: "Did you hear how he solved the problem?" },
+  { jp: "彼が誰とデートしているか分かりません。", en: "I don’t know who he is dating." },
+  { jp: "彼が私に何を言いたかったのか分かりません。", en: "I don’t know what he wanted to tell me." },
+  { jp: "彼女がどの病院に行ったのか知っていますか？", en: "Do you know which hospital she went to?" },
+  { jp: "彼がその仕事を断った理由を知りたい。", en: "I want to know why he turned down the job." },
+  { jp: "彼女が誰と話していたのか気になります。", en: "I wonder who she was talking to." },
+  { jp: "彼が今日来るかどうか分かりません。", en: "I don’t know if he will come today." },
+  { jp: "彼女がどの服を選ぶか見てみましょう。", en: "Let’s see which dress she will choose." },
+  { jp: "彼が今何をしているのか教えてください。", en: "Tell me what he is doing now." },
+  { jp: "彼がどれくらい忙しいのか知っていますか？", en: "Do you know how busy he is?" },
+  { jp: "なぜ彼女がそんなに幸せなのか不思議です。", en: "I wonder why she is so happy." },
+  { jp: "彼が週末にどこへ行くのか知っていますか？", en: "Do you know where he is going this weekend?" },
+  { jp: "彼女が何時に起きたのか覚えていますか？", en: "Do you remember what time she woke up?" },
+  { jp: "彼がそれをどうやって修理したのか知りたい。", en: "I want to know how he fixed it." },
+  { jp: "彼女がなぜその仕事を選んだのか教えてください。", en: "Tell me why she chose that job." },
+  { jp: "彼がその映画を好きかどうか知っていますか？", en: "Do you know if he likes the movie?" },
+  { jp: "彼女が何を欲しがっているのか考えてみましょう。", en: "Let’s think about what she wants." }
+];
+
+const q1 = [
+  { jp: "私は朝早く起きるのに慣れています。", en: "I’m used to getting up early." },
+  { jp: "彼は忙しくしているのに慣れています。", en: "He’s used to being busy." },
+  { jp: "私は彼女に会えないことにうんざりしています。", en: "I’m sick of not seeing her." },
+  { jp: "彼女は遅くまで働くのに疲れています。", en: "She’s tired of working late." },
+  { jp: "私は運動するのを避けていません。", en: "I don’t mind exercising." },
+  { jp: "彼は彼女の笑顔を見るのを恋しく思っています。", en: "He misses seeing her smile." },
+  { jp: "私は旅行に行くのを楽しみにしています。", en: "I’m looking forward to going on a trip." },
+  { jp: "彼女は何もせずにいる自分を想像できません。", en: "She can’t imagine being lazy." },
+  { jp: "私は昨日早く寝たことを後悔しています。", en: "I regret going to bed early yesterday." },
+  { jp: "彼は英語を勉強するのが好きです。", en: "He likes studying English." },
+  { jp: "私は人前で話すのが苦手です。", en: "I can’t stand speaking in public." },
+  { jp: "彼女はそのプロジェクトについて考えています。", en: "She’s thinking about working on that project." },
+  { jp: "私の手伝いをしてくれてありがとう。", en: "Thank you for helping me." },
+  { jp: "彼はジムに行くのをやめたのですか？", en: "What happened to going to the gym?" },
+  { jp: "私は健康的でいることに慣れています。", en: "I’m used to being healthy." },
+  { jp: "彼は彼女に無視されるのにうんざりしています。", en: "He’s sick of being ignored by her." },
+  { jp: "私は彼が努力しないことにうんざりしています。", en: "I’m sick of him not trying." },
+  { jp: "彼女は自分が強くなっていくことを楽しんでいます。", en: "She enjoys becoming stronger." },
+  { jp: "私は新しい人と出会うのが好きです。", en: "I like meeting new people." },
+  { jp: "彼はチームの一員であることに慣れています。", en: "He’s used to being part of a team." },
+  { jp: "私は彼女が遅刻するのに我慢できません。", en: "I can’t stand her being late." },
+  { jp: "彼女は健康的な食事を作るのが好きです。", en: "She likes making healthy meals." },
+  { jp: "私は夜更かししないことに慣れていません。", en: "I’m not used to not staying up late." },
+  { jp: "彼は怒られないように行動しています。", en: "He’s thinking about not making mistakes." },
+  { jp: "彼女は優しくされるのに慣れていません。", en: "She isn’t used to being treated kindly." },
+  { jp: "私は彼が頑張るのを見るのを楽しみにしています。", en: "I’m looking forward to seeing him do his best." },
+  { jp: "彼は部屋を片付けてくれたことに感謝しています。", en: "He’s thankful for her cleaning the room." },
+  { jp: "私は何もせずにいるのが嫌いです。", en: "I hate doing nothing." },
+  { jp: "彼女は毎朝ランニングすることに慣れています。", en: "She’s used to running every morning." },
+  { jp: "私は自分が怠けていないことを誇りに思っています。", en: "I’m proud of not being lazy." }
+];
+
+const q2 = [
+  {jp:"私は英語を学びたいです。", en:"I want to learn English."},
+  {jp:"彼女は手伝ってもらうよう頼みました。", en:"She asked me to help her."},
+  {jp:"彼は来ることを決めました。", en:"He decided to come."},
+  {jp:"私は本を読むために図書館に行きます。", en:"I go to the library to read books."},
+  {jp:"彼は医者になるつもりです。", en:"He plans to become a doctor."},
+  {jp:"彼女は綺麗に歌うために練習します。", en:"She practices to sing well."},
+  {jp:"私は彼に電話をかけようとしました。", en:"I tried to call him."},
+  {jp:"彼らは新しいプロジェクトを始めることに同意した。", en:"They agreed to start a new project."},
+  {jp:"私はピザを作るために材料を買った。", en:"I bought ingredients to make pizza."},
+  {jp:"彼女は彼に会うことを望んでいる。", en:"She hopes to meet him."},
+  {jp:"父は私を大学に行かせるつもりです。", en:"My father intends to send me to college."},
+  {jp:"私は宿題を終わらせる必要があります。", en:"I need to finish my homework."},
+  {jp:"彼はあの場所を見つけることができませんでした。", en:"He couldn't find the place."},
+  {jp:"彼女はスピーチをすることを恐れている。", en:"She is afraid to give a speech."},
+  {jp:"私は犬を飼うことを決めた。", en:"I decided to have a dog."},
+  {jp:"彼は問題を解決することを約束した。", en:"He promised to solve the problem."},
+  {jp:"私はあなたに真実を話すつもりです。", en:"I am going to tell you the truth."},
+  {jp:"彼女は料理を習うことに興味があります。", en:"She is interested to learn cooking."},
+  {jp:"私たちはもっと練習する必要があります。", en:"We need to practice more."},
+  {jp:"彼は自分の夢を追うことに決めた。", en:"He chose to follow his dream."},
+  {jp:"私は彼を手伝うために来ました。", en:"I came to help him."},
+  {jp:"彼女は旅行するためにお金を貯めています。", en:"She is saving money to travel."},
+  {jp:"彼は明日その仕事を始める予定です。", en:"He is scheduled to start the job tomorrow."},
+  {jp:"私はあなたに伝えるために戻ってきました。", en:"I came back to tell you."},
+  {jp:"彼らはそのルールを学ぶ必要があります。", en:"They need to learn the rules."},
+  {jp:"私は歌うことを学びたい。", en:"I want to learn to sing."},
+  {jp:"彼女は試験に合格するために勉強している。", en:"She studies to pass the exam."},
+  {jp:"彼は仕事を辞めることを決めた。", en:"He decided to quit his job."},
+  {jp:"私は彼を助けるためにここにいます。", en:"I am here to help him."},
+  {jp:"彼は新しい言語を学びたいと思っています。", en:"He wants to learn a new language."}
+];
+
+const q3 = [
+  { jp: "私はもうその映画を3回見ました。", en: "I’ve seen that movie three times already." },
+{ jp: "彼はこのプロジェクトに長い間取り組んできました。", en: "He’s worked on this project for a long time." },
+{ jp: "私はこんなに美しい景色を見たことがありません。", en: "I’ve never seen such a beautiful view." },
+{ jp: "彼女は一度も外国に行ったことがありません。", en: "She’s never been abroad." },
+{ jp: "私はそのメールをもう送りました。", en: "I’ve already sent the email." },
+{ jp: "彼らはまだ到着していません。", en: "They haven’t arrived yet." },
+{ jp: "私はもっと早く寝るべきだった。", en: "I should’ve gone to bed earlier." },
+{ jp: "彼にもう少し親切にすればよかった。", en: "I should’ve been nicer to him." },
+{ jp: "そんなことを言うべきじゃなかった。", en: "I shouldn’t have said that." },
+{ jp: "もっと注意して運転すればよかった。", en: "I should’ve driven more carefully." },
+{ jp: "彼女に本当のことを話すべきじゃなかった。", en: "I shouldn’t have told her the truth." },
+{ jp: "もう少し頑張ることができたと思う。", en: "I could’ve tried a bit harder." },
+{ jp: "彼はもっと上手くやれたはずだ。", en: "He could’ve done it better." },
+{ jp: "私は彼女を助けることができたのに。", en: "I could’ve helped her." },
+{ jp: "君が電話してくれたら迎えに行けたのに。", en: "I could’ve picked you up if you had called." },
+{ jp: "もしもっと時間があれば旅行に行けたのに。", en: "I would’ve gone on a trip if I had more time." },
+{ jp: "彼がそこにいたら、きっと助けてくれただろう。", en: "He would’ve helped if he had been there." },
+{ jp: "雨が降らなければピクニックに行っていた。", en: "We would’ve gone on a picnic if it hadn’t rained." },
+{ jp: "もっと若ければ挑戦していただろう。", en: "I would’ve tried if I were younger." },
+{ jp: "あなたが言ってくれたら、私は行かなかっただろう。", en: "I wouldn’t have gone if you had told me." },
+{ jp: "彼女がいなければ成功しなかっただろう。", en: "I wouldn’t have succeeded without her." },
+{ jp: "彼を信じなければよかった。", en: "I shouldn’t have trusted him." },
+{ jp: "もっと早く出発していれば間に合ったのに。", en: "We would’ve made it if we had left earlier." },
+{ jp: "そんなに食べなければよかった。", en: "I shouldn’t have eaten so much." },
+{ jp: "彼は長い間彼女に恋をしていた。", en: "He’s been in love with her for a long time." },
+{ jp: "私はギターを10年以上弾いています。", en: "I’ve played the guitar for over ten years." },
+{ jp: "彼は最近体調が良くありません。", en: "He’s not been feeling well lately." },
+{ jp: "彼らはもう別れてしまいました。", en: "They’ve already broken up." },
+{ jp: "私は今までこんなに幸せを感じたことがありません。", en: "I’ve never felt this happy before." },
+{ jp: "もし彼女が遅れなければ、私たちは一緒に映画を見られたのに。", en: "We would’ve watched the movie together if she hadn’t been late." }
+];
+
+const q4 = [
+  { jp: "私は彼に真実を話したいです。", en: "I want to tell him the truth." },
+  { jp: "私は今日は仕事に行きたくありません。", en: "I don’t want to go to work today." },
+  { jp: "彼は早く起きなければなりません。", en: "He has to get up early." },
+  { jp: "私は彼女に会わないようにしなければなりません。", en: "I have to not meet her." },
+  { jp: "彼女はもっと健康的でいなければなりません。", en: "She has to be healthier." },
+  { jp: "私はその話を聞きたくありませんでした。", en: "I didn’t want to hear that story." },
+  { jp: "彼は子どものころ、よくサッカーをしていました。", en: "He used to play soccer when he was a child." },
+  { jp: "彼女はもっと運動するべきです。", en: "She should exercise more." },
+  { jp: "あなたは遅刻すべきではありません。", en: "You shouldn’t be late." },
+  { jp: "彼に電話してもいいですか？", en: "Can I call him?" },
+  { jp: "私にその仕事を手伝ってもらいたいですか？", en: "Do you want me to help with that work?" },
+  { jp: "彼女は甘いものを食べないようにしていました。", en: "She had to not eat sweets." },
+  { jp: "彼は以前、東京に住んでいました。", en: "He used to live in Tokyo." },
+  { jp: "彼女はそのことを言うつもりではありませんでした。", en: "She didn’t mean to say that." },
+  { jp: "あなたはその問題を解決しなければなりません。", en: "You have to solve that problem." },
+  { jp: "彼は遅くまで起きていないようにしなければなりません。", en: "He has to not stay up late." },
+  { jp: "私は今日は早く寝るつもりです。", en: "I’m going to go to bed early today." },
+  { jp: "私たちはその件について話し合う必要があります。", en: "We have to talk about that matter." },
+  { jp: "彼女はそれを諦めたくありませんでした。", en: "She didn’t want to give it up." },
+  { jp: "そのプロジェクトを始めましょう。", en: "Let’s start the project." },
+  { jp: "彼は健康でいようとしています。", en: "He’s trying to be healthy." },
+  { jp: "あなたは彼を信じるべきではありません。", en: "You shouldn’t trust him." },
+  { jp: "私はその仕事をしたくありませんでした。", en: "I didn’t want to do that job." },
+  { jp: "私は今日は外出しないつもりです。", en: "I’m not going to go out today." },
+  { jp: "彼女は今よりも優しくなる必要があります。", en: "She has to be kinder than she is now." },
+  { jp: "あなたは新しいことに挑戦してみるべきです。", en: "You should try something new." },
+  { jp: "彼は怒らないようにしようとしました。", en: "He tried to not get angry." },
+  { jp: "私は彼にもう一度チャンスを与えたかった。", en: "I wanted to give him another chance." },
+  { jp: "私たちはもっと親切でいるべきです。", en: "We should be more kind." },
+  { jp: "あなたは彼に嘘をつかないようにする必要があります。", en: "You have to not lie to him." }
+];
+
+const q5 = [
+  {jp:"私は明日忙しいでしょう。", en:"I will be busy tomorrow."},
+  {jp:"彼らは来週旅行する予定です。", en:"They are going to travel next week."},
+  {jp:"彼はすぐに戻るでしょう。", en:"He'll be back soon."},
+  {jp:"私たちは来年引っ越す予定です。", en:"We will move next year."},
+  {jp:"その会議は明後日に行われます。", en:"The meeting will be held the day after tomorrow."},
+  {jp:"彼女は今晩来るでしょう。", en:"She is going to come tonight."},
+  {jp:"私はその本を読むつもりです。", en:"I will read that book."},
+  {jp:"天気は良くなるでしょう。", en:"The weather will get better."},
+  {jp:"彼は試験に合格するでしょう。", en:"He will pass the exam."},
+  {jp:"彼らは新しい家を買うでしょう。", en:"They will buy a new house."},
+  {jp:"私はあなたに電話します。", en:"I will call you."},
+  {jp:"彼は来月退職するでしょう。", en:"He will retire next month."},
+  {jp:"私たちは午後に出発します。", en:"We are going to leave in the afternoon."},
+  {jp:"その計画は成功するだろう。", en:"The plan will succeed."},
+  {jp:"私は夏に日本に行くつもりです。", en:"I am going to go to Japan in summer."},
+  {jp:"彼女は家を売るでしょう。", en:"She will sell the house."},
+  {jp:"彼は遅れるでしょう。", en:"He is going to be late."},
+  {jp:"私は医者になります。", en:"I will become a doctor."},
+  {jp:"あなたはそれを達成できるでしょう。", en:"You will achieve that."},
+  {jp:"彼らは次の週末に会うでしょう。", en:"They will meet next weekend."},
+  {jp:"私は明日の朝そこにいます。", en:"I will be there tomorrow morning."},
+  {jp:"彼女は手伝ってくれるでしょう。", en:"She will help us."},
+  {jp:"私はすぐに始めます。", en:"I will start right away."},
+  {jp:"彼はそのイベントに参加するでしょう。", en:"He will attend the event."},
+  {jp:"彼女は来週戻る予定です。", en:"She is going to return next week."},
+  {jp:"新しいシステムは来年導入されるでしょう。", en:"The new system will be implemented next year."},
+  {jp:"私は今夜夕食を作るつもりです。", en:"I am going to cook dinner tonight."},
+  {jp:"彼はこの仕事を終えるでしょう。", en:"He will finish this work."},
+  {jp:"私は来週、京都に行く予定です。", en:"I will go to Kyoto next week."},
+  {jp:"私たちは近いうちに話します。", en:"We will talk soon."}
+];
+
+const q6 = [
+  {jp:"もし私があなたなら、その仕事を受けるでしょう。", en:"If I were you, I would take the job."},
+  {jp:"もっと早く知っていたらよかったのに。", en:"If I had known earlier, I would have helped."},
+  {jp:"彼が若ければもっと無理をするだろう。", en:"If he were younger, he would try harder."},
+  {jp:"願わくば私はピアノが弾けたらいいのに。", en:"I wish I could play the piano."},
+  {jp:"もし雨が降らなければ、私たちは行っただろう。", en:"If it hadn't rained, we would have gone."},
+  {jp:"もし時間があれば、彼は来るだろう。", en:"If he had time, he would come."},
+  {jp:"願っています、あなたが幸せであることを。", en:"I wish you were happy."},
+  {jp:"もし彼が助けてくれたらよかったのに。", en:"If only he had helped us."},
+  {jp:"彼女はもっと勉強していれば合格しただろう。", en:"She would have passed if she had studied more."},
+  {jp:"もし私がお金持ちなら、世界一周するだろう。", en:"If I were rich, I would travel around the world."},
+  {jp:"彼が早く来れば助かるのに。", en:"If he came earlier, it would be helpful."},
+  {jp:"もし私が時間を戻せたら、違う選択をする。", en:"If I could turn back time, I'd choose differently."},
+  {jp:"彼がそれを言わなければよかったのに。", en:"I wish he hadn't said that."},
+  {jp:"もし道が空いていれば、もっと早く着いただろう。", en:"If the road had been clear, we would have arrived earlier."},
+  {jp:"もしあの時行っていれば、会えただろう。", en:"If I had gone then, I would have met him."},
+  {jp:"彼女が知っていれば手伝っただろう。", en:"If she had known, she would have helped."},
+  {jp:"もし私が鳥なら空を飛びたい。", en:"If I were a bird, I would fly in the sky."},
+  {jp:"その知らせを受けていれば、驚かなかっただろう。", en:"If I had been informed, I wouldn't have been surprised."},
+  {jp:"もし私たちが若ければ、もっと冒険するだろう。", en:"If we were younger, we would be more adventurous."},
+  {jp:"彼がもっと優しかったら違ったかもしれない。", en:"If he had been kinder, things might have been different."},
+  {jp:"もし勉強していれば合格しただろう。", en:"Had I studied, I would have passed the test."},
+  {jp:"私はもう少し勇敢なら言っただろう。", en:"If I had been braver, I would have spoken up."},
+  {jp:"もし彼女が来たら、喜んだだろう。", en:"If she had come, we would have been happy."},
+  {jp:"あの時諦めなければよかった。", en:"I wish I hadn't given up then."},
+  {jp:"もし彼が助言を聞いていたら成功したかもしれない。", en:"If he had listened to the advice, he might have succeeded."},
+  {jp:"私がもっと若かったらあそこへ行っただろう。", en:"If I were younger, I would go there."},
+  {jp:"もし彼らが手伝ってくれたらすぐ終わっただろう。", en:"If they had helped, it would have finished quickly."},
+  {jp:"彼が行かなければよかったのに。", en:"I wish he hadn't gone."},
+  {jp:"もし時間があれば、もっと旅行したいです。", en:"If I had more time, I would travel more."},
+  {jp:"もし時間が戻せたら全て直したい。", en:"If I could go back, I'd fix everything."}
+];
+
+const q7 = [
+  {jp:"その本は彼によって書かれました。", en:"The book was written by him."},
+  {jp:"窓は昨日掃除されました。", en:"The window was cleaned yesterday."},
+  {jp:"この歌は多くの人に歌われています。", en:"This song is sung by many people."},
+  {jp:"その車は修理されるでしょう。", en:"The car will be repaired."},
+  {jp:"プレゼントは彼女に渡されました。", en:"The present was given to her."},
+  {jp:"料理は母によって作られました。", en:"The meal was cooked by my mother."},
+  {jp:"その部屋は現在使われていません。", en:"The room is not used now."},
+  {jp:"そのプロジェクトは完了されました。", en:"The project has been completed."},
+  {jp:"手紙は彼に送られました。", en:"The letter was sent to him."},
+  {jp:"その映画は多くの賞を受賞した。", en:"The movie was awarded many prizes."},
+  {jp:"問題は早く解決されるべきです。", en:"The issue should be resolved soon."},
+  {jp:"その仕事は既に与えられました。", en:"The job has already been assigned."},
+  {jp:"牛乳は冷蔵庫に入れられた。", en:"The milk was put in the fridge."},
+  {jp:"その歌詞は忘れられた。", en:"The lyrics were forgotten."},
+  {jp:"彼女はパーティーで歓迎されました。", en:"She was welcomed at the party."},
+  {jp:"その島は観光地として知られている。", en:"The island is known as a tourist spot."},
+  {jp:"その会議はキャンセルされました。", en:"The meeting was cancelled."},
+  {jp:"その作品は展示されています。", en:"The piece is displayed at the gallery."},
+  {jp:"彼の意見は無視された。", en:"His opinion was ignored."},
+  {jp:"窓ガラスは割られた。", en:"The window glass was broken."},
+  {jp:"そのドアは自動で閉められる。", en:"The door is closed automatically."},
+  {jp:"写真はネットで共有された。", en:"The photos were shared on the internet."},
+  {jp:"そのキーは見つかりました。", en:"The key was found."},
+  {jp:"その計画は詳しく説明された。", en:"The plan was explained in detail."},
+  {jp:"その知らせは彼らに伝えられた。", en:"The news was conveyed to them."},
+  {jp:"その犬は公園で見つけられた。", en:"The dog was found in the park."},
+  {jp:"そのコンサートは中止になった。", en:"The concert was cancelled."},
+  {jp:"その仕事はプロによって処理された。", en:"The job was handled by a professional."},
+  {jp:"そのレポートは彼によって書かれました。", en:"The report was written by him."},
+  {jp:"その賞は彼に授与された。", en:"The award was given to him."}
+];
+
+const q8 = [
+  {jp:"私はもう夕食を食べました。", en:"I have already had dinner."},
+  {jp:"彼は3年間ここに住んでいます。", en:"He has lived here for three years."},
+  {jp:"彼女は宿題を終えました。", en:"She has finished her homework."},
+  {jp:"彼らはもう出発しました。", en:"They have already left."},
+  {jp:"私はその映画を見たことがあります。", en:"I have seen that movie."},
+  {jp:"彼はまだ来ていません。", en:"He hasn't come yet."},
+  {jp:"私たちはまだ結論に達していません。", en:"We haven't reached a conclusion yet."},
+  {jp:"彼女はこの本を何度も読んでいます。", en:"She has read this book many times."},
+  {jp:"彼は最近病気でした。", en:"He has been ill recently."},
+  {jp:"私はその手紙を受け取りました。", en:"I have received the letter."},
+  {jp:"彼らはもう昼食を食べましたか？", en:"Have they eaten lunch already?"},
+  {jp:"私はここに来たことがあります。", en:"I have been here before."},
+  {jp:"彼女は既に決定を下した。", en:"She has already made the decision."},
+  {jp:"私たちは近いうちに会ったことがあります。", en:"We have met recently."},
+  {jp:"彼はその職務を終えた。", en:"He has completed the duty."},
+  {jp:"私はそのニュースを聞いたことがあります。", en:"I have heard that news."},
+  {jp:"彼女はまだ宿題を終えていない。", en:"She hasn't finished her homework yet."},
+  {jp:"彼はずっとそこにいた。", en:"He has been there all along."},
+  {jp:"私は今までに多くの国を訪れた。", en:"I have visited many countries."},
+  {jp:"私達は目標を達成しました。", en:"We have achieved our goal."},
+  {jp:"彼はすでに出発している。", en:"He has already departed."},
+  {jp:"私はまだそれをやっていない。", en:"I haven't done it yet."},
+  {jp:"彼女はすでに電話した。", en:"She has already called."},
+  {jp:"それはもう使われています。", en:"It has been used already."},
+  {jp:"私は長年ここで働いています。", en:"I have worked here for many years."},
+  {jp:"彼らは最近転職した。", en:"They have recently changed jobs."},
+  {jp:"私はずっとそれを探している。", en:"I have been looking for it."},
+  {jp:"彼女はこれまでにそれを試したことがある。", en:"She has tried that before."},
+  {jp:"我々はすでに計画を立てました。", en:"We have already made plans."},
+  {jp:"彼女はちょうど仕事を終えたところです。", en:"She has just finished her work."}
+];
+
+const ALL = [
+  ...q0.map(q=>({...q,type:0})),
+  ...q1.map(q=>({...q,type:1})),
+  ...q2.map(q=>({...q,type:2})),
+  ...q3.map(q=>({...q,type:3})),
+  ...q4.map(q=>({...q,type:4})),
+  ...q5.map(q=>({...q,type:5})),
+  ...q6.map(q=>({...q,type:6})),
+  ...q7.map(q=>({...q,type:7})),
+  ...q8.map(q=>({...q,type:8}))
+];
+
+/* 同義語辞書（元のまま）*/
+const SYN = {
+  "do the dishes":["wash dishes","do dishes","wash the dishes","clean the dishes"],
+  "have dinner":["eat dinner","eat supper","have supper"],
+  "call":"phone",
+  "buy":["purchase","get"],
+  "ask":"request",
+  "help":["assist"],
+  "finish":["complete"],
+  "start":["begin"],
+  "look forward to":["anticipate","await"],
+  "kids":["children"]
+};
+
+/* 状態・ストレージ */
+let currentType = 0;
+let currentIndex = 0;
+let filtered = ALL.filter(i=>i.type===0);
+let shuffledLists = {};
+let scores = {};
+const STORAGE_KEY = "epu_scores_v1";
+
+for(let t=0;t<9;t++){
+  const arr = ALL.filter(q=>q.type===t);
+  shuffledLists[t] = [...arr];
+  scores[t] = {correct:0, wrong:0, shown:0};
+}
+loadScores();
+
+/* UI 要素バインド */
+const typeSelect = document.getElementById("typeSelect");
+const modeSelect = document.getElementById("modeSelect");
+const questionJP = document.getElementById("questionJP");
+const answerEl = document.getElementById("answer");
+const feedback = document.getElementById("feedback");
+const scoreboard = document.getElementById("scoreboard");
+const ttsLang = document.getElementById("ttsLang");
+const searchInput = document.getElementById("searchInput");
+const acceptPartial = document.getElementById("acceptPartial");
+const allListDiv = document.getElementById("allList");
+const metaInfo = document.getElementById("metaInfo"); // ← 保持するが「表示しない」仕様にする
+const modelAnswerEl = document.getElementById("modelAnswer");
+
+TYPE_LABELS.forEach((lab,i)=>{
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = `${i+1}. ${lab}`;
+  typeSelect.appendChild(opt);
+});
+
+typeSelect.addEventListener("change", ()=>{ currentType = Number(typeSelect.value); currentIndex=0; prepareFiltered(); showQuestion(); updateScoreboard(); hideAllList(); });
+modeSelect.addEventListener("change", ()=>{ prepareFiltered(); showQuestion(); });
+document.getElementById("checkBtn").addEventListener("click", ()=>checkAnswer());
+document.getElementById("nextBtn").addEventListener("click", ()=>nextQuestion());
+document.getElementById("speakBtn").addEventListener("click", ()=>speakCurrent());
+document.getElementById("speakBothBtn").addEventListener("click", ()=>speakENthenJP());
+document.getElementById("voiceBtn").addEventListener("click", ()=>startRecognition());
+document.getElementById("showAllBtn").addEventListener("click", ()=>toggleAllList());
+document.getElementById("resetScoreBtn").addEventListener("click", ()=>resetScores());
+searchInput.addEventListener("input", ()=>showQuestion());
+
+function prepareFiltered(){
+  const arr = ALL.filter(q=>q.type===currentType);
+  if(modeSelect.value==="shuffle"){
+    if(!shuffledLists[currentType] || shuffledLists[currentType].length!==arr.length){
+      shuffledLists[currentType] = shuffle([...arr]);
+    }
+    filtered = shuffledLists[currentType];
+  } else {
+    filtered = arr;
+  }
+}
+
+function showQuestion(){
+  prepareFiltered();
+  const search = (searchInput.value||"").trim().toLowerCase();
+  let q = filtered[currentIndex % filtered.length];
+  if(search){
+    const matched = filtered.filter(x=> x.jp.toLowerCase().includes(search) || x.en.toLowerCase().includes(search) );
+    if(matched.length>0) q = matched[0];
+  }
+  questionJP.textContent = `[${TYPE_LABELS[currentType]} ${currentIndex+1}/${filtered.length}] ${q.jp}`;
+  // ここで英語を表示しない（metaInfoを空に）
+  metaInfo.textContent = "";
+  answerEl.value = "";
+  feedback.textContent = "";
+  // ここが重要：モデル解答は問題表示時には見せない
+  modelAnswerEl.textContent = "";
+  updateScoreboard();
+}
+
+/* 判定・正規化・同義語等（元のまま） */
+function normalizeText(s){
+  if(!s) return "";
+  return s.toLowerCase()
+    .replace(/’/g,"'")
+    .replace(/\bi'm\b/g,"i am")
+    .replace(/\byou're\b/g,"you are")
+    .replace(/\bhe's\b/g,"he is")
+    .replace(/\bshe's\b/g,"she is")
+    .replace(/\bit's\b/g,"it is")
+    .replace(/\bcan't\b/g,"cannot")
+    .replace(/\bwon't\b/g,"will not")
+    .replace(/\bdon't\b/g,"do not")
+    .replace(/\bdoesn't\b/g,"does not")
+    .replace(/\bI've\b/g,"I have")
+    .replace(/[.,!?;:"]/g,"")
+    .replace(/\s+/g," ").trim();
+}
+
+function replaceSynonyms(s){
+  let r = s;
+  for(const [k,v] of Object.entries(SYN)){
+    if(Array.isArray(v)){
+      v.forEach(sym=>{
+        const re = new RegExp("\\b"+escapeReg(sym)+"\\b","gi");
+        if(re.test(r)){
+          r = r.replace(re,k);
+        }
+      });
+    } else {
+      const re = new RegExp("\\b"+escapeReg(v)+"\\b","gi");
+      if(re.test(r)) r = r.replace(re,k);
+    }
+  }
+  return r;
+}
+function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+
+function isEquivalent(userRaw, correctRaw){
+  if(!userRaw || !correctRaw) return false;
+  const u0 = normalizeText(userRaw);
+  const c0 = normalizeText(correctRaw);
+  if(u0 === c0) return true;
+  const u1 = replaceSynonyms(u0);
+  const c1 = replaceSynonyms(c0);
+  if(u1 === c1) return true;
+  const wa = u1.split(" ").filter(Boolean);
+  const wb = c1.split(" ").filter(Boolean);
+  const common = wa.filter(w=> wb.includes(w)).length;
+  const overlapRatio = common / Math.max(wa.length||1, wb.length||1);
+  if(overlapRatio >= 0.72) return true;
+  const dist = levenshtein(u1, c1);
+  const normDist = dist / Math.max(u1.length, c1.length, 1);
+  if(normDist <= 0.28) return true;
+  if(acceptPartial.checked){
+    if(overlapRatio >= 0.55) return true;
+  }
+  return false;
+}
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  if(m===0) return n; if(n===0) return m;
+  const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[m][n];
+}
+
+/* 判定処理（修正点：正解時も modelAnswer を表示） */
+function checkAnswer(){
+  prepareFiltered();
+  const q = filtered[currentIndex % filtered.length];
+  const user = answerEl.value.trim();
+  if(!user){
+    feedback.style.color="#b45309";
+    feedback.textContent = "答えを入力するか音声入力してください。";
+    modelAnswerEl.textContent = "";
+    return;
+  }
+  const ok = isEquivalent(user, q.en);
+  if(ok){
+    feedback.style.color="#059669";
+    feedback.textContent = "✅ 正解です！";
+    scores[currentType].correct++;
+    scores[currentType].shown++;
+  } else {
+    feedback.style.color="#dc2626";
+    feedback.textContent = `❌ 不正解です。`;
+    scores[currentType].wrong++;
+    scores[currentType].shown++;
+  }
+  // ← ここが変更：正解・不正解に関わらず、模範解答（英語）を表示する
+  modelAnswerEl.textContent = `模範解答：${q.en}`;
+  saveScores();
+  updateScoreboard();
+}
+
+/* 次の問題 */
+function nextQuestion(){
+  currentIndex = (currentIndex + 1) % filtered.length;
+  showQuestion();
+}
+
+/* TTS */
+function speak(text, lang){
+  if(!text) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang || document.getElementById("ttsLang").value || "en-US";
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+function speakCurrent(){
+  const q = filtered[currentIndex % filtered.length];
+  speak(q.en, "en-US");
+}
+function speakENthenJP(){
+  const q = filtered[currentIndex % filtered.length];
+  speak(q.en, "en-US");
+  setTimeout(()=>speak(q.jp, "ja-JP"), 800);
+}
+
+/* STT */
+let recognizer = null;
+function startRecognition(){
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRec){
+    alert("このブラウザは音声認識に対応していません。Chromeを推奨します。");
+    return;
+  }
+  if(recognizer){ recognizer.abort(); recognizer = null; }
+  recognizer = new SpeechRec();
+  recognizer.lang = "en-US";
+  recognizer.interimResults = false;
+  recognizer.maxAlternatives = 1;
+  recognizer.onresult = (ev)=>{
+    const t = ev.results[0][0].transcript;
+    answerEl.value = t;
+  };
+  recognizer.onerror = (e)=>{ alert("音声認識エラー: " + (e.error||e.message)); };
+  recognizer.onend = ()=>{ recognizer = null; };
+  recognizer.start();
+}
+
+/* スコア管理 */
+function saveScores(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(scores)); }catch(e){}
+}
+function loadScores(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const tmp = JSON.parse(raw);
+      if(tmp && typeof tmp === "object") scores = tmp;
+    }
+  }catch(e){}
+}
+function resetScores(){
+  if(!confirm("スコアをリセットしますか？")) return;
+  for(let t=0;t<9;t++) scores[t] = {correct:0,wrong:0,shown:0};
+  saveScores();
+  updateScoreboard();
+}
+
+/* スコアボード更新 */
+function updateScoreboard(){
+  scoreboard.innerHTML = "";
+  let totalCorrect=0, totalWrong=0, totalShown=0;
+  for(let t=0;t<9;t++){
+    const s = scores[t] || {correct:0,wrong:0,shown:0};
+    totalCorrect += s.correct; totalWrong += s.wrong; totalShown += s.shown;
+    const box = document.createElement("div");
+    box.className = "scorebox";
+    const acc = s.shown===0?0:Math.round((s.correct/(s.shown))*100);
+    box.innerHTML = `<div><strong>${TYPE_LABELS[t]}</strong></div>
+      <div class="small">正解:${s.correct} 不正解:${s.wrong} 回答:${s.shown}</div>
+      <div class="small">正答率: ${acc}%</div>`;
+    if(t===currentType) box.style.border="1px solid #3b82f6";
+    scoreboard.appendChild(box);
+  }
+  const overall = document.createElement("div");
+  overall.className = "scorebox";
+  const overallAcc = totalShown===0?0:Math.round((totalCorrect/(totalShown))*100);
+  overall.innerHTML = `<div><strong>合計</strong></div>
+    <div class="small">正解:${totalCorrect} 不正解:${totalWrong} 回答:${totalShown}</div>
+    <div class="small">総合正答率: ${overallAcc}%</div>`;
+  scoreboard.appendChild(overall);
+}
+
+/* 全問表示 */
+function toggleAllList(){
+  if(allListDiv.style.display==="block"){ hideAllList(); return; }
+  const arr = ALL.filter(q=>q.type===currentType);
+  allListDiv.style.display="block";
+  allListDiv.innerHTML = `<h3>${TYPE_LABELS[currentType]} 全${arr.length}問</h3>`;
+  const ul = document.createElement("ol");
+  arr.forEach((q,i)=>{
+    const li = document.createElement("li");
+    li.style.margin="6px 0";
+    li.innerHTML = `<strong>JP:</strong> ${q.jp} <br/><strong>EN:</strong> ${q.en} <button onclick="copyExample('${escapeForJs(q.en)}')">例文をコピー</button>`;
+    ul.appendChild(li);
+  });
+  allListDiv.appendChild(ul);
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+}
+function hideAllList(){ allListDiv.style.display="none"; allListDiv.innerHTML=""; }
+function copyExample(txt){ navigator.clipboard && navigator.clipboard.writeText(txt); alert("英文をコピーしました。"); }
+function escapeForJs(s){ return s.replace(/'/g,"\\'").replace(/"/g,'\\"'); }
+
+/* shuffle helper */
+function shuffle(a){ const ar=[...a]; for(let i=ar.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ar[i],ar[j]]=[ar[j],ar[i]]; } return ar; }
+
+/* 初期化 */
+prepareFiltered();
+showQuestion();
+updateScoreboard();
+window.addEventListener("beforeunload", ()=>{ saveScores(); });
+
+</script>
+</body>
+</html>
