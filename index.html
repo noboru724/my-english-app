@@ -2,42 +2,69 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<title>英作文 練習アプリ — 270問</title>
+<title>英作文 練習アプリ  — 9タイプ × 30問（270問）</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-  /* --- グラデーション背景（英語アプリっぽい）＋元デザインを継承 --- */
+  /* 淡いブルーのグラデーション背景 + 柔らかいボタンデザイン */
+  :root{
+    --bg1: #e6f2ff;
+    --bg2: #f3f9ff;
+    --card: #ffffff;
+    --primary: #2563eb;
+    --accent: #10b981;
+    --warn: #f59e0b;
+    --muted: #6b7280;
+  }
+  html,body{height:100%}
   body{
-    font-family:system-ui,-apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-    background: linear-gradient(135deg, #e6f0ff 0%, #f3e8ff 50%, #fff6e6 100%);
-    margin:0;padding:18px;display:flex;flex-direction:column;align-items:center;min-height:100vh;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    margin:0;padding:18px;display:flex;justify-content:center;align-items:flex-start;
+    background: linear-gradient(180deg,var(--bg1) 0%, #f7fbff 40%, var(--bg2) 100%);
+    -webkit-font-smoothing:antialiased;
   }
   .wrap{width:100%;max-width:980px}
-  h1{margin:6px 0 12px;color:#0f172a}
-  .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-  select,input[type=checkbox]{padding:8px;border-radius:8px;border:1px solid #cbd5e1}
-  .card{background:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 20px rgba(15,23,42,0.08)}
-  #questionJP{font-size:18px;margin-bottom:8px;color:#0b1220}
-  textarea{width:100%;min-height:84px;padding:10px;border-radius:8px;border:1px solid #e5e7eb;font-size:16px}
-  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-  button{background:#2563eb;color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:15px}
-  button.secondary{background:#10b981}
-  button.warn{background:#f59e0b}
-  .feedback{margin-top:10px;min-height:44px;font-weight:700}
-  .model-answer{margin-top:8px;color:#065f46;font-weight:600}
+  h1{margin:6px 0 12px;color:#0f172a;font: size 42px;font-weight:700}
+  .top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  select,input[type=checkbox],input[type=text]{
+    padding:8px;border-radius:10px;border:1px solid #dbeafe;background:#fff;
+    box-shadow: 0 1px 0 rgba(2,6,23,0.03);
+  }
+  .card{
+    background:var(--card);
+    padding:18px;border-radius:14px;
+    box-shadow: 0 10px 30px rgba(2,6,23,0.06);
+    border: 1px solid rgba(15,23,42,0.03);
+  }
+  #questionJP{font-size:22px;margin-bottom:8px;color:#0b1220}
+  .muted.small{color:var(--muted);font-size:13px}
+  textarea{width:98%;min-height:84px;padding:12px;border-radius:10px;border:1px solid #e6eefc;font-size:22px;background:#fbfdff}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  button{
+    background:var(--primary);color:#fff;border:none;padding:10px 14px;border-radius:12px;cursor:pointer;font-size:15px;
+    box-shadow: 0 6px 18px rgba(37,99,235,0.12);transition:transform .08s ease, box-shadow .08s ease;
+  }
+  button.secondary{background:var(--accent); box-shadow: 0 6px 18px rgba(16,185,129,0.12)}
+  button.warn{background:var(--warn); box-shadow: 0 6px 18px rgba(245,158,11,0.12)}
+  button.ghost{background:transparent;color:var(--primary);border:1px solid rgba(37,99,235,0.12);box-shadow:none}
+  button:active{transform:translateY(1px)}
+  .feedback{margin-top:12px;min-height:44px;font-weight:700;font-size:16px}
+  .exampleEN{margin-top:8px;color:#0b1220;font-weight:600}
   .scoreboard{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
-  .scorebox{background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #e6eefc;min-width:160px}
-  .small{font-size:13px;color:#475569}
+  .scorebox{background:#f8fafc;padding:10px;border-radius:10px;border:1px solid #e6eefc;min-width:160px}
+  .small{font-size:13px;color:var(--muted)}
   .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
   .right{margin-left:auto}
-  footer{margin-top:16px;font-size:13px;color:#64748b}
-  .muted{color:#6b7280;font-size:13px}
-  button:active{transform:translateY(1px)}
-  @media(max-width:520px){ .top{flex-direction:column;align-items:stretch} .btns{flex-direction:column} }
+  footer{margin-top:16px;font-size:13px;color:var(--muted)}
+  .muted{color:var(--muted);font-size:13px}
+  @media(max-width:640px){
+    .top{flex-direction:column;align-items:stretch}
+    .btns{flex-direction:column}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>英作文 練習アプリ　 — 9タイプ × 30問（270問）</h1>
+  <h1>英作文 練習アプリ  — 9タイプ × 30問（270問）</h1>
 
   <div class="top">
     <label>タイプ：
@@ -72,15 +99,14 @@
       <button id="checkBtn">答え合わせ</button>
       <button id="nextBtn" class="secondary">▶ 次の問題へ</button>
       <button id="speakBtn" class="warn">🔊 読む</button>
-      <button id="speakBothBtn">🔊 英→日</button>
-      <button id="voiceBtn">🎤 音声入力</button>
-      <button id="showAllBtn">📚 全問表示</button>
-      <button id="resetScoreBtn" style="background:#ef4444">スコアリセット</button>
+      <button id="speakBothBtn" class="ghost">🔊 英→日</button>
+      <button id="voiceBtn" class="">🎤 音声入力</button>
+      <button id="showAllBtn" class="ghost">📚 全問表示</button>
+      <button id="resetScoreBtn" style="background:#ef4444;box-shadow:0 6px 18px rgba(239,68,68,0.12)">スコアリセット</button>
     </div>
 
     <div class="feedback" id="feedback"></div>
-    <!-- ここが追加：正解時・不正解時どちらでも模範解答を表示 -->
-    <div class="model-answer" id="modelAnswer"></div>
+    <div class="exampleEN" id="exampleEN" aria-live="polite"></div>
 
     <div class="scoreboard" id="scoreboard"></div>
 
@@ -98,14 +124,18 @@
 
 <script>
 /* ===========================
-   問題データ（9タイプ × 各30問 = 270問）
-   （ユーザー入力どおりの完全版データをそのまま格納）
+   元のロジックを維持しつつ、以下を実装：
+   - 正解時にも模範解答（英）を表示（exampleEN）
+   - 自動保存＆復元（タイプ・index・mode・scores・shuffled order）
+   - 外観はグラデーション＆柔らかボタン（CSS上で実現済み）
    ===========================*/
 
 const TYPE_LABELS = [
   "WH名詞節","動名詞","不定詞","過去分詞","動詞の原形","未来形","仮定法","受動態","現在完了"
 ];
 
+/* --- 9タイプ × 30問 = 270問（既に用意された問題をここにフルで挿入） --- */
+/* （前コードと同じ問題群を使用） */
 const q0 = [
   { jp: "彼がいつ帰ってくるか知っていますか？", en: "Do you know when he will come back?" },
   { jp: "なぜ彼女が怒っているのか分かりません。", en: "I don’t know why she is angry." },
@@ -415,7 +445,7 @@ const ALL = [
   ...q8.map(q=>({...q,type:8}))
 ];
 
-/* 同義語辞書（元のまま）*/
+/* 同義語辞書（簡易）*/
 const SYN = {
   "do the dishes":["wash dishes","do dishes","wash the dishes","clean the dishes"],
   "have dinner":["eat dinner","eat supper","have supper"],
@@ -429,35 +459,37 @@ const SYN = {
   "kids":["children"]
 };
 
-/* 状態・ストレージ */
+/* 状態 */
 let currentType = 0;
 let currentIndex = 0;
 let filtered = ALL.filter(i=>i.type===0);
 let shuffledLists = {};
 let scores = {};
-const STORAGE_KEY = "epu_scores_v1";
+const STORAGE_SCORES = "epu_scores_v1";
+const STORAGE_STATE = "epu_state_v1";
 
+/* 初期化のための配列作成 */
 for(let t=0;t<9;t++){
   const arr = ALL.filter(q=>q.type===t);
   shuffledLists[t] = [...arr];
   scores[t] = {correct:0, wrong:0, shown:0};
 }
-loadScores();
 
-/* UI 要素バインド */
+/* UI要素 */
 const typeSelect = document.getElementById("typeSelect");
 const modeSelect = document.getElementById("modeSelect");
 const questionJP = document.getElementById("questionJP");
 const answerEl = document.getElementById("answer");
 const feedback = document.getElementById("feedback");
+const exampleEN = document.getElementById("exampleEN");
 const scoreboard = document.getElementById("scoreboard");
 const ttsLang = document.getElementById("ttsLang");
 const searchInput = document.getElementById("searchInput");
 const acceptPartial = document.getElementById("acceptPartial");
 const allListDiv = document.getElementById("allList");
-const metaInfo = document.getElementById("metaInfo"); // ← 保持するが「表示しない」仕様にする
-const modelAnswerEl = document.getElementById("modelAnswer");
+const metaInfo = document.getElementById("metaInfo"); // kept but kept empty per requirement
 
+/* fill type select */
 TYPE_LABELS.forEach((lab,i)=>{
   const opt = document.createElement("option");
   opt.value = i;
@@ -465,8 +497,21 @@ TYPE_LABELS.forEach((lab,i)=>{
   typeSelect.appendChild(opt);
 });
 
-typeSelect.addEventListener("change", ()=>{ currentType = Number(typeSelect.value); currentIndex=0; prepareFiltered(); showQuestion(); updateScoreboard(); hideAllList(); });
-modeSelect.addEventListener("change", ()=>{ prepareFiltered(); showQuestion(); });
+/* イベント */
+typeSelect.addEventListener("change", ()=>{
+  currentType = Number(typeSelect.value);
+  currentIndex = 0;
+  prepareFiltered();
+  showQuestion();
+  updateScoreboard();
+  hideAllList();
+  saveState();
+});
+modeSelect.addEventListener("change", ()=>{
+  prepareFiltered();
+  showQuestion();
+  saveState();
+});
 document.getElementById("checkBtn").addEventListener("click", ()=>checkAnswer());
 document.getElementById("nextBtn").addEventListener("click", ()=>nextQuestion());
 document.getElementById("speakBtn").addEventListener("click", ()=>speakCurrent());
@@ -475,7 +520,9 @@ document.getElementById("voiceBtn").addEventListener("click", ()=>startRecogniti
 document.getElementById("showAllBtn").addEventListener("click", ()=>toggleAllList());
 document.getElementById("resetScoreBtn").addEventListener("click", ()=>resetScores());
 searchInput.addEventListener("input", ()=>showQuestion());
+answerEl.addEventListener("input", ()=>{ /* auto-save input for UX but not necessary */ saveState(); });
 
+/* prepare filtered list based on mode */
 function prepareFiltered(){
   const arr = ALL.filter(q=>q.type===currentType);
   if(modeSelect.value==="shuffle"){
@@ -488,6 +535,7 @@ function prepareFiltered(){
   }
 }
 
+/* show question (JP only). metaInfo (EN) intentionally NOT shown here */
 function showQuestion(){
   prepareFiltered();
   const search = (searchInput.value||"").trim().toLowerCase();
@@ -497,16 +545,16 @@ function showQuestion(){
     if(matched.length>0) q = matched[0];
   }
   questionJP.textContent = `[${TYPE_LABELS[currentType]} ${currentIndex+1}/${filtered.length}] ${q.jp}`;
-  // ここで英語を表示しない（metaInfoを空に）
+  // metaInfo remains empty (do not display the answer here)
   metaInfo.textContent = "";
   answerEl.value = "";
   feedback.textContent = "";
-  // ここが重要：モデル解答は問題表示時には見せない
-  modelAnswerEl.textContent = "";
+  exampleEN.textContent = "";
   updateScoreboard();
+  saveState();
 }
 
-/* 判定・正規化・同義語等（元のまま） */
+/* ---------- 判定ロジック（短縮形・同義語・曖昧一致対応） ---------- */
 function normalizeText(s){
   if(!s) return "";
   return s.toLowerCase()
@@ -520,10 +568,13 @@ function normalizeText(s){
     .replace(/\bwon't\b/g,"will not")
     .replace(/\bdon't\b/g,"do not")
     .replace(/\bdoesn't\b/g,"does not")
-    .replace(/\bI've\b/g,"I have")
+    .replace(/\bi've\b/g,"i have")
+    .replace(/\bthey'll\b/g,"they will")
     .replace(/[.,!?;:"]/g,"")
     .replace(/\s+/g," ").trim();
 }
+
+function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
 
 function replaceSynonyms(s){
   let r = s;
@@ -531,9 +582,7 @@ function replaceSynonyms(s){
     if(Array.isArray(v)){
       v.forEach(sym=>{
         const re = new RegExp("\\b"+escapeReg(sym)+"\\b","gi");
-        if(re.test(r)){
-          r = r.replace(re,k);
-        }
+        if(re.test(r)) r = r.replace(re,k);
       });
     } else {
       const re = new RegExp("\\b"+escapeReg(v)+"\\b","gi");
@@ -542,7 +591,21 @@ function replaceSynonyms(s){
   }
   return r;
 }
-function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  if(m===0) return n; if(n===0) return m;
+  const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[m][n];
+}
 
 function isEquivalent(userRaw, correctRaw){
   if(!userRaw || !correctRaw) return false;
@@ -565,22 +628,8 @@ function isEquivalent(userRaw, correctRaw){
   }
   return false;
 }
-function levenshtein(a,b){
-  const m=a.length,n=b.length;
-  if(m===0) return n; if(n===0) return m;
-  const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
-  for(let i=0;i<=m;i++) dp[i][0]=i;
-  for(let j=0;j<=n;j++) dp[0][j]=j;
-  for(let i=1;i<=m;i++){
-    for(let j=1;j<=n;j++){
-      const cost = a[i-1]===b[j-1]?0:1;
-      dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
-    }
-  }
-  return dp[m][n];
-}
 
-/* 判定処理（修正点：正解時も modelAnswer を表示） */
+/* 判定処理 — ここを修正：正解時でも模範解答を表示 */
 function checkAnswer(){
   prepareFiltered();
   const q = filtered[currentIndex % filtered.length];
@@ -588,7 +637,7 @@ function checkAnswer(){
   if(!user){
     feedback.style.color="#b45309";
     feedback.textContent = "答えを入力するか音声入力してください。";
-    modelAnswerEl.textContent = "";
+    exampleEN.textContent = "";
     return;
   }
   const ok = isEquivalent(user, q.en);
@@ -597,22 +646,25 @@ function checkAnswer(){
     feedback.textContent = "✅ 正解です！";
     scores[currentType].correct++;
     scores[currentType].shown++;
+    // 新仕様：正解でも模範解答を表示
+    exampleEN.textContent = `模範解答（例）： ${q.en}`;
   } else {
     feedback.style.color="#dc2626";
     feedback.textContent = `❌ 不正解です。`;
+    exampleEN.textContent = `模範解答（例）： ${q.en}`;
     scores[currentType].wrong++;
     scores[currentType].shown++;
   }
-  // ← ここが変更：正解・不正解に関わらず、模範解答（英語）を表示する
-  modelAnswerEl.textContent = `模範解答：${q.en}`;
   saveScores();
   updateScoreboard();
+  saveState();
 }
 
 /* 次の問題 */
 function nextQuestion(){
   currentIndex = (currentIndex + 1) % filtered.length;
   showQuestion();
+  saveState();
 }
 
 /* TTS */
@@ -633,12 +685,12 @@ function speakENthenJP(){
   setTimeout(()=>speak(q.jp, "ja-JP"), 800);
 }
 
-/* STT */
+/* STT (ブラウザ側) */
 let recognizer = null;
 function startRecognition(){
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SpeechRec){
-    alert("このブラウザは音声認識に対応していません。Chromeを推奨します。");
+    alert("このブラウザは音声認識に対応していません。Chrome推奨。");
     return;
   }
   if(recognizer){ recognizer.abort(); recognizer = null; }
@@ -649,6 +701,7 @@ function startRecognition(){
   recognizer.onresult = (ev)=>{
     const t = ev.results[0][0].transcript;
     answerEl.value = t;
+    saveState();
   };
   recognizer.onerror = (e)=>{ alert("音声認識エラー: " + (e.error||e.message)); };
   recognizer.onend = ()=>{ recognizer = null; };
@@ -657,25 +710,56 @@ function startRecognition(){
 
 /* スコア管理 */
 function saveScores(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(scores)); }catch(e){}
+  try{ localStorage.setItem(STORAGE_SCORES, JSON.stringify(scores)); }catch(e){}
 }
 function loadScores(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_SCORES);
     if(raw){
       const tmp = JSON.parse(raw);
       if(tmp && typeof tmp === "object") scores = tmp;
     }
   }catch(e){}
 }
+
+/* 自動保存＆復元（タイプ・index・mode・scores・shuffledLists） */
+function saveState(){
+  try{
+    const payload = {
+      currentType,
+      currentIndex,
+      mode: modeSelect.value,
+      scores,
+      shuffledLists,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_STATE, JSON.stringify(payload));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_STATE);
+    if(raw){
+      const obj = JSON.parse(raw);
+      if(obj){
+        if(typeof obj.currentType === "number") currentType = obj.currentType;
+        if(typeof obj.currentIndex === "number") currentIndex = obj.currentIndex;
+        if(obj.mode) modeSelect.value = obj.mode;
+        if(obj.scores) scores = obj.scores;
+        if(obj.shuffledLists) shuffledLists = obj.shuffledLists;
+      }
+    }
+  }catch(e){}
+}
+
+/* reset scores */
 function resetScores(){
   if(!confirm("スコアをリセットしますか？")) return;
   for(let t=0;t<9;t++) scores[t] = {correct:0,wrong:0,shown:0};
-  saveScores();
-  updateScoreboard();
+  saveScores(); saveState(); updateScoreboard();
 }
 
-/* スコアボード更新 */
+/* update scoreboard UI */
 function updateScoreboard(){
   scoreboard.innerHTML = "";
   let totalCorrect=0, totalWrong=0, totalShown=0;
@@ -688,7 +772,7 @@ function updateScoreboard(){
     box.innerHTML = `<div><strong>${TYPE_LABELS[t]}</strong></div>
       <div class="small">正解:${s.correct} 不正解:${s.wrong} 回答:${s.shown}</div>
       <div class="small">正答率: ${acc}%</div>`;
-    if(t===currentType) box.style.border="1px solid #3b82f6";
+    if(t===currentType) box.style.border="1px solid rgba(37,99,235,0.9)";
     scoreboard.appendChild(box);
   }
   const overall = document.createElement("div");
@@ -723,11 +807,23 @@ function escapeForJs(s){ return s.replace(/'/g,"\\'").replace(/"/g,'\\"'); }
 /* shuffle helper */
 function shuffle(a){ const ar=[...a]; for(let i=ar.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ar[i],ar[j]]=[ar[j],ar[i]]; } return ar; }
 
-/* 初期化 */
-prepareFiltered();
-showQuestion();
-updateScoreboard();
-window.addEventListener("beforeunload", ()=>{ saveScores(); });
+/* 初期化：状態復元・表示 */
+(function init(){
+  loadScores();
+  loadState();
+  // ensure UI reflects loaded state
+  typeSelect.value = currentType;
+  modeSelect.value = modeSelect.value || "seq";
+  prepareFiltered();
+  // clamp currentIndex
+  if(!filtered || filtered.length===0) filtered = ALL.filter(q=>q.type===currentType);
+  currentIndex = Math.min(currentIndex, Math.max(0, filtered.length-1));
+  showQuestion();
+  updateScoreboard();
+})();
+
+/* beforeunload save */
+window.addEventListener("beforeunload", ()=>{ saveScores(); saveState(); });
 
 </script>
 </body>
