@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>英作文練習アプリ</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f6f8fa;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #progress {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #0078d7;
+    }
+    #question {
+      font-size: 1.2em;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #f0f4ff;
+      border-radius: 8px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button {
+      background: #0078d7;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    #result, #feedback {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>英作文 練習アプリ</h1>
+    <div id="progress">第1問 / 全20問</div>
+    <div id="question">ここに問題が表示されます</div>
+    <input type="text" id="answer" placeholder="英語で答えてください" />
+    <div>
+      <button id="submit">解答</button>
+      <button id="next" style="display:none;">次へ</button>
+    </div>
+    <div id="feedback"></div>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const questionsData = [
+      { jp: "彼が昨日どこに行ったのか知っていますか？", en: "Do you know where he went yesterday?" },
+      { jp: "私は彼女がどれくらい忙しいのか知りません。", en: "I don’t know how busy she is." },
+      { jp: "彼が何時に家に帰るのか教えてください。", en: "Tell me what time he goes home." },
+      { jp: "彼らがどれくらいその問題を重要だと思っているのか考えてみましょう。", en: "Let’s think about how important they think the issue is." },
+      { jp: "私はあなたが昨日銀行に行ったことを覚えています。", en: "I remember you went to the bank yesterday." },
+      { jp: "私は仕事を終えなければなりません。", en: "I have to finish work." },
+      { jp: "私は彼に謝らなければなりませんでした。", en: "I had to say sorry to him." },
+      { jp: "私はもっと頑張りたいです。", en: "I want to make more progress." },
+      { jp: "私は以前よくジムに行っていました。", en: "I used to go to the gym." },
+      { jp: "私は彼女にプロポーズするつもりでした。", en: "I was going to propose to her." },
+      { jp: "私は早起きするのに慣れています。", en: "I’m used to getting up early." },
+      { jp: "私は家事をするのが嫌いではありません。", en: "I don’t mind doing the housework." },
+      { jp: "彼に会うのを楽しみにしています。", en: "I’m looking forward to seeing him." },
+      { jp: "私はストレスを発散するために運動することを考えています。", en: "I’m thinking about working out to get rid of stress." },
+      { jp: "彼とけんかしたことを後悔しています。", en: "I regret having a fight with him." },
+      { jp: "私は一度も彼女に会ったことがありません。", en: "I’ve never met her." },
+      { jp: "彼に謝るべきでした。", en: "I should’ve said sorry to him." },
+      { jp: "私はもっとお金を貯めることができたのに。", en: "I could’ve saved more money." },
+      { jp: "彼にプロポーズすればよかった。", en: "I should’ve proposed to him." },
+      { jp: "彼に二度とそんなことを言わなければよかった。", en: "I shouldn’t have said that to him again." }
+    ];
+
+    let usedIndexes = [];
+    let currentIndex = 0;
+    let answersLog = [];
+    let currentQuestionNumber = 0;
+
+    const progressEl = document.getElementById('progress');
+    const questionEl = document.getElementById('question');
+    const answerEl = document.getElementById('answer');
+    const feedbackEl = document.getElementById('feedback');
+    const resultEl = document.getElementById('result');
+    const submitBtn = document.getElementById('submit');
+    const nextBtn = document.getElementById('next');
+
+    function getRandomQuestion() {
+      if (usedIndexes.length >= 20) return null;
+      let index;
+      do {
+        index = Math.floor(Math.random() * questionsData.length);
+      } while (usedIndexes.includes(index));
+      usedIndexes.push(index);
+      return questionsData[index];
+    }
+
+    function showQuestion() {
+      const q = getRandomQuestion();
+      if (!q) {
+        endQuiz();
+        return;
+      }
+      currentIndex = questionsData.indexOf(q);
+      currentQuestionNumber = usedIndexes.length;
+      progressEl.textContent = `第${currentQuestionNumber}問 / 全20問`;
+      questionEl.textContent = q.jp;
+      feedbackEl.textContent = '';
+      answerEl.value = '';
+      answerEl.style.display = 'block';
+      submitBtn.style.display = 'inline-block';
+      nextBtn.style.display = 'none';
+    }
+
+
+    const synonyms = {
+  // 🔹動詞（Verb）
+  "buy": ["get", "purchase", "pick up"],
+  "get": ["buy", "obtain", "receive"],
+  "say": ["tell", "mention"],
+  "tell": ["say", "inform"],
+  "speak": ["talk", "chat"],
+  "talk": ["speak", "chat"],
+  "begin": ["start"],
+  "start": ["begin"],
+  "make": ["create", "build", "cook", "prepare"],
+  "cook": ["make", "prepare"],
+  "eat": ["have"],
+  "drink": ["have"],
+  "see": ["watch", "look at"],
+  "watch": ["see", "look at"],
+  "look for": ["search for", "try to find"],
+  "find": ["discover"],
+  "help": ["assist", "support", "give a hand"],
+  "fix": ["repair", "mend"],
+  "go": ["travel", "move"],
+  "come": ["arrive"],
+  "leave": ["go out", "depart"],
+  "meet": ["see", "get together with"],
+  "live": ["stay", "reside"],
+  "need": ["require"],
+  "want": ["would like", "hope to"],
+  "think": ["believe", "guess", "suppose"],
+  "wait": ["hang on", "hold on"],
+  "try": ["attempt"],
+  "use": ["utilize"],
+  "show": ["display"],
+  "finish": ["end", "complete"],
+  "understand": ["get", "figure out"],
+  "ask": ["request", "inquire"],
+  "learn": ["study", "pick up"],
+  "teach": ["instruct"],
+  "remember": ["recall"],
+  "forget": ["miss", "fail to remember"],
+  "give": ["hand", "offer", "pass"],
+  "take": ["grab", "carry"],
+  "like": ["enjoy", "love"],
+  "love": ["like", "enjoy"],
+  "hate": ["dislike", "can’t stand"],
+  "work": ["labor", "do a job"],
+  "rest": ["relax", "take a break"],
+  "walk": ["go on foot", "stroll"],
+  "run": ["jog"],
+  "open": ["unlock"],
+  "close": ["shut"],
+  "say sorry": ["apologize"],
+
+  // 🔹名詞（Noun）
+  "children": ["kids"],
+  "child": ["kid"],
+  "friend": ["buddy", "pal", "mate"],
+  "job": ["work", "occupation"],
+  "house": ["home", "residence"],
+  "car": ["vehicle", "ride"],
+  "clothes": ["outfit", "garment"],
+  "money": ["cash"],
+  "picture": ["photo", "image"],
+  "question": ["inquiry"],
+  "answer": ["reply", "response"],
+  "food": ["meal", "dish"],
+  "movie": ["film"],
+  "store": ["shop"],
+  "teacher": ["instructor"],
+  "student": ["learner"],
+  "street": ["road"],
+  "school": ["academy"],
+  "book": ["novel", "volume"],
+
+  // 🔹形容詞（Adjective）
+  "happy": ["glad", "pleased"],
+  "sad": ["unhappy", "upset"],
+  "angry": ["mad"],
+  "beautiful": ["pretty", "lovely", "gorgeous"],
+  "difficult": ["hard"],
+  "easy": ["simple"],
+  "fast": ["quick"],
+  "slow": ["sluggish"],
+  "tired": ["sleepy", "exhausted"],
+  "hungry": ["starving"],
+  "full": ["stuffed"],
+  "good": ["nice", "great", "fine"],
+  "bad": ["terrible", "awful"],
+  "okay": ["fine", "alright"],
+  "big": ["large", "huge"],
+  "small": ["little", "tiny"],
+  "rich": ["wealthy"],
+  "poor": ["needy"],
+  "busy": ["occupied"],
+  "funny": ["amusing", "hilarious"],
+  "interesting": ["fascinating"],
+  "important": ["significant", "crucial"],
+  "smart": ["clever", "intelligent"],
+  "beautiful": ["pretty", "lovely", "cute"],
+  "cold": ["chilly", "cool"],
+  "hot": ["warm", "boiling"],
+  "scary": ["frightening", "creepy"],
+  "friendly": ["kind", "nice"],
+  "expensive": ["costly", "pricey"],
+  "cheap": ["inexpensive"],
+
+  // 🔹副詞・表現（Adverb / Phrases）
+  "maybe": ["perhaps", "possibly"],
+  "really": ["very", "truly"],
+  "a lot": ["lots", "plenty"],
+  "right now": ["currently", "at the moment"],
+  "later": ["afterwards", "soon"],
+  "sometimes": ["occasionally"],
+  "always": ["all the time"],
+  "never": ["not ever"],
+  "very good": ["great", "awesome"],
+  "very bad": ["terrible", "awful"],
+  "thank you": ["thanks", "appreciate it"],
+  "goodbye": ["bye", "see you"],
+  "hello": ["hi", "hey"]
+};
+
+
+  function checkAnswer() {
+  const userAnswer = answerEl.value.trim();
+  const correctAnswer = questionsData[currentIndex].en;
+
+  // 🔽 前処理（小文字化＋縮約形統一）
+  const normalize = str =>
+    str
+      .toLowerCase()
+      .replace(/’/g, "'")
+      // not系
+      .replace(/\bshouldn['’]t\b/g, "should not")
+      .replace(/\bcouldn['’]t\b/g, "could not")
+      .replace(/\bwouldn['’]t\b/g, "would not")
+      .replace(/\bdon['’]t\b/g, "do not")
+      .replace(/\bdoesn['’]t\b/g, "does not")
+      .replace(/\bdidn['’]t\b/g, "did not")
+      // have系（'ve）
+      .replace(/\bshould['’]ve\b/g, "should have")
+      .replace(/\bcould['’]ve\b/g, "could have")
+      .replace(/\bwould['’]ve\b/g, "would have")
+      .replace(/\bi['’]ve\b/g, "i have")
+      .replace(/\byou['’]ve\b/g, "you have")
+      .replace(/\bthey['’]ve\b/g, "they have")
+      .replace(/\bwe['’]ve\b/g, "we have")
+      .trim()
+      .replace(/\s+/g, " "); // 余分な空白を統一
+
+  const normalizedUser = normalize(userAnswer);
+  const normalizedCorrect = normalize(correctAnswer);
+
+  // 🚫 明確な文法ミス（to there, to home など）
+  const grammarErrors = [/to there\b/, /to home\b/, /to abroad\b/, /to outside\b/];
+  const hasGrammarError = grammarErrors.some(re => re.test(normalizedUser));
+
+  // 🧠 単語レベルで意味の一致をチェック
+  const userWords = normalizedUser.split(" ");
+  const correctWords = normalizedCorrect.split(" ");
+
+  // 同義語辞書（必要に応じて拡張可能）
+  const synonyms = {
+    "children": ["kids"],
+    "buy": ["purchase", "get"],
+    "begin": ["start"],
+    "want": ["would like"],
+    "help": ["assist"],
+    "ask": ["request"]
+  };
+
+  // 同義語を考慮してマッチ判定
+  const matchedCount = correctWords.filter(correctWord => {
+    return userWords.some(userWord => {
+      if (userWord === correctWord) return true;
+      const syns = synonyms[correctWord];
+      return syns ? syns.includes(userWord) : false;
+    });
+  }).length;
+
+  const similarity = matchedCount / correctWords.length;
+
+  // ✅ 意味と文法の両方が合っていれば正解
+  const isCorrect =
+    !hasGrammarError &&
+    (normalizedUser === normalizedCorrect || similarity >= 0.8);
+
+  if (isCorrect) {
+    feedbackEl.innerHTML = `✅ 正解です！<br>模範解答：<span style="color:#0078d7;">${correctAnswer}</span>`;
+    feedbackEl.style.color = "green";
+  } else {
+    feedbackEl.innerHTML = `❌ 不正解です。<br>あなたの回答：<span style="color:#555;">${userAnswer}</span><br>模範解答：<span style="color:#d32f2f;">${correctAnswer}</span>`;
+    feedbackEl.style.color = "red";
+  }
+
+  answersLog.push({
+    jp: questionsData[currentIndex].jp,
+    user: userAnswer,
+    correct: correctAnswer,
+    result: isCorrect ? "正解" : "不正解"
+  });
+
+  submitBtn.style.display = "none";
+  nextBtn.style.display = "inline-block";
+}
+
+
+
+   
+
+    function endQuiz() {
+      questionEl.textContent = 'お疲れさまでした！全20問が終了しました。';
+      progressEl.textContent = '';
+      answerEl.style.display = 'none';
+      submitBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+      feedbackEl.textContent = '';
+
+      let tableHTML = '<table><tr><th>出題文（日本語）</th><th>あなたの解答</th><th>正解英文</th></tr>';
+      answersLog.forEach(a => {
+        tableHTML += `<tr><td>${a.jp}</td><td>${a.user}</td><td>${a.correct}</td></tr>`;
+      });
+      tableHTML += '</table>';
+      resultEl.innerHTML = tableHTML;
+    }
+
+    submitBtn.addEventListener('click', checkAnswer);
+    nextBtn.addEventListener('click', () => {
+      if (usedIndexes.length >= 20) {
+        endQuiz();
+      } else {
+        showQuestion();
+      }
+    });
+
+    showQuestion();
+  </script>
+</body>
+</html>
